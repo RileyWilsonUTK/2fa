@@ -100,3 +100,104 @@ function saveFinalResponse(studyData) {
   ]);
   return true;
 }
+
+function generateSimulatedData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Responses');
+  if (!sheet) {
+    sheet = ss.insertSheet('Responses');
+  }
+
+  // Clear old test rows and set the exact 8 headers
+  sheet.clear();
+  sheet.appendRow([
+    'Timestamp',
+    'Condition',
+    'Initial_Decision',
+    'Decision_Time_Sec',
+    'Annoyed_Confused',
+    'Confidence',
+    'Generated_Warning',
+    'Final_Decision'
+  ]);
+
+  // Realistic behavioral profiles for each condition (20 rows each)
+  const profiles = {
+    'Condition 1': {
+      initApproveProb: 0.75, // High baseline approval due to missing context
+      flipToDenyProb: 0.60,  // Moderate flip rate after warning
+      timeRange: [1.4, 5.2],
+      annoyedRange: [1, 3],
+      confRange: [3, 5],
+      warning: 'This login request provides no location or device details. Approving a blind prompt grants full account access if you did not just enter your password.'
+    },
+    'Condition 2': {
+      initApproveProb: 0.55, // Fatigue causes accidental/frustrated approvals
+      flipToDenyProb: 0.75,  // Strong flip rate once MFA bombing is explained
+      timeRange: [2.1, 8.5],
+      annoyedRange: [4, 5],
+      confRange: [1, 3],
+      warning: 'Receiving multiple rapid sign-in requests is a common MFA bombing tactic. Do not approve just to stop the alerts—tap Deny if you are not actively signing in.'
+    },
+    'Condition 3': {
+      initApproveProb: 0.35, // Number matching slows users down
+      flipToDenyProb: 0.80,
+      timeRange: [5.5, 14.0],
+      annoyedRange: [2, 4],
+      confRange: [3, 5],
+      warning: 'Only approve number-matching prompts when the exact two-digit code appears on the screen in front of you right now.'
+    },
+    'Condition 4': {
+      initApproveProb: 0.25, // High-context foreign IP triggers early caution
+      flipToDenyProb: 0.90,  // Nearly all remaining approvals flip to Deny
+      timeRange: [3.8, 11.5],
+      annoyedRange: [2, 4],
+      confRange: [4, 5],
+      warning: 'Security Alert: This login originates from Chrome on Windows 11 in Moscow, Russia. Unless you are using a VPN there, tap Deny immediately.'
+    }
+  };
+
+  const rows = [];
+  const baseTime = new Date().getTime() - (80 * 60000);
+  let rowIndex = 0;
+
+  Object.keys(profiles).forEach(cond => {
+    const p = profiles[cond];
+    for (let i = 0; i < 20; i++) {
+      const ts = new Date(baseTime + rowIndex * 60000);
+      const initApprove = Math.random() < p.initApproveProb;
+      const initialDecision = initApprove ? 'Approve' : 'Deny';
+
+      // Fast clicks (<3.5s) happen more often on blind/habitual approvals
+      let latency = p.timeRange[0] + Math.random() * (p.timeRange[1] - p.timeRange[0]);
+      if (initApprove && cond === 'Condition 1' && Math.random() < 0.5) {
+        latency = 1.2 + Math.random() * 1.8;
+      }
+      latency = Number(latency.toFixed(2));
+
+      const annoyed = Math.floor(p.annoyedRange[0] + Math.random() * (p.annoyedRange[1] - p.annoyedRange[0] + 1));
+      const confidence = Math.floor(p.confRange[0] + Math.random() * (p.confRange[1] - p.confRange[0] + 1));
+
+      let finalDecision = initialDecision;
+      if (initialDecision === 'Approve' && Math.random() < p.flipToDenyProb) {
+        finalDecision = 'Deny';
+      }
+
+      rows.push([
+        ts,
+        cond,
+        initialDecision,
+        latency,
+        annoyed,
+        confidence,
+        p.warning,
+        finalDecision
+      ]);
+      rowIndex++;
+    }
+  });
+
+  sheet.getRange(2, 1, rows.length, 8).setValues(rows);
+  Logger.log('Successfully generated 80 simulated responses (20 per condition).');
+}
+
