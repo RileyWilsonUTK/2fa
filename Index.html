@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 550px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+    .box { border: 1px solid #ccc; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+    .warning-box { background: #fff8e1; border-left: 5px solid #f57c00; padding: 14px; margin: 12px 0; border-radius: 4px; }
+    .hidden { display: none; }
+    button { padding: 8px 18px; margin-top: 14px; cursor: pointer; }
+    label { margin-right: 12px; cursor: pointer; }
+
+    /* Built-in 2FA Mobile Prompt Mockup Card */
+    .phone-card {
+      max-width: 320px;
+      margin: 16px auto;
+      border: 2px solid #333;
+      border-radius: 18px;
+      padding: 18px;
+      background: #fafafa;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .phone-header { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .phone-title { font-size: 17px; font-weight: bold; color: #111; margin-bottom: 8px; }
+    .phone-detail { font-size: 13px; color: #333; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: left; }
+    .stacked-ping { font-size: 12px; color: #b71c1c; background: #ffebee; border: 1px solid #ffcdd2; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; text-align: left; }
+    .code-badge { font-size: 24px; font-weight: bold; background: #e8eaf6; color: #1a237e; padding: 6px 16px; border-radius: 8px; display: inline-block; margin: 8px 0; }
+    .mock-btns { display: flex; justify-content: space-around; margin-top: 12px; font-size: 13px; font-weight: bold; }
+    .mock-deny { color: #c62828; border: 1px solid #c62828; padding: 5px 16px; border-radius: 14px; }
+    .mock-approve { color: #2e7d32; border: 1px solid #2e7d32; padding: 5px 16px; border-radius: 14px; }
+  </style>
+</head>
+<body>
+  <h2>COSC 469/569 Class Project — 2FA Prompt Study</h2>
+  <p><em>This is a class project for COSC 469/569. Your responses are anonymous and will only be used for this course.</em></p>
+
+  <!-- Step 1: Pick a Number -->
+  <div id="step1" class="box">
+    <p><strong>Pick a number *</strong></p>
+    <label><input type="radio" name="cond" value="1"> 1</label>
+    <label><input type="radio" name="cond" value="2"> 2</label>
+    <label><input type="radio" name="cond" value="3"> 3</label>
+    <label><input type="radio" name="cond" value="4"> 4</label><br>
+    <button onclick="toStep2()">Next</button>
+  </div>
+
+  <!-- Step 2: Section A / B / C / D -->
+  <div id="step2" class="box hidden">
+    <h3 id="secTitle">Section A</h3>
+    <p><strong>Based on the prompt, what would you do? *</strong></p>
+
+    <!-- Dynamic 2FA Prompt Graphic -->
+    <div id="promptVisual"></div>
+
+    <label><input type="radio" name="decision" value="Approve"> Approve</label>
+    <label><input type="radio" name="decision" value="Deny"> Deny</label>
+
+    <p><strong>How annoyed or confused did you feel by this prompt? *</strong> (1 = Not at all, 5 = Extremely)</p>
+    <label><input type="radio" name="annoyed" value="1"> 1</label>
+    <label><input type="radio" name="annoyed" value="2"> 2</label>
+    <label><input type="radio" name="annoyed" value="3"> 3</label>
+    <label><input type="radio" name="annoyed" value="4"> 4</label>
+    <label><input type="radio" name="annoyed" value="5"> 5</label>
+
+    <p><strong>How confident were you in your decision? *</strong> (1 = Not confident, 5 = Very confident)</p>
+    <label><input type="radio" name="conf" value="1"> 1</label>
+    <label><input type="radio" name="conf" value="2"> 2</label>
+    <label><input type="radio" name="conf" value="3"> 3</label>
+    <label><input type="radio" name="conf" value="4"> 4</label>
+    <label><input type="radio" name="conf" value="5"> 5</label><br>
+
+    <button id="step2Btn" onclick="toStep3()">Next</button>
+  </div>
+
+  <!-- Step 3: Generated Warning + Final Question -->
+  <div id="step3" class="box hidden">
+    <h3>Security Notice</h3>
+    <div id="warningText" class="warning-box">Generating notice...</div>
+
+    <div id="finalQuestionArea" class="hidden">
+      <p><strong>After reading this warning, what would you do now? *</strong></p>
+      <label><input type="radio" name="finalDecision" value="Approve"> Approve</label>
+      <label><input type="radio" name="finalDecision" value="Deny"> Deny</label><br>
+      <button id="submitBtn" onclick="submitStudy()">Submit</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Done -->
+  <div id="step4" class="box hidden">
+    <h3>Thank you!</h3>
+    <p>Your response has been recorded for the COSC 469/569 Class Project.</p>
+  </div>
+
+  <script>
+    const PROMPT_CARDS = {
+      '1': `
+        <div class="phone-card">
+          <div class="phone-header">Account Security • Now</div>
+          <div class="phone-title">Are you trying to sign in?</div>
+          <div class="phone-detail">
+            <strong>Account:</strong> user@vols.utk.edu<br>
+            <strong>Details:</strong> No additional info available
+          </div>
+          <div class="mock-btns">
+            <span class="mock-deny">✕ Deny</span>
+            <span class="mock-approve">✓ Approve</span>
+          </div>
+        </div>`,
+      '2': `
+        <div class="phone-card">
+          <div class="phone-header">Multiple Alerts • Last 2 Mins</div>
+          <div class="stacked-ping">🔔 Sign-in request (11:41 AM) — Unanswered</div>
+          <div class="stacked-ping">🔔 Sign-in request (11:42 AM) — Unanswered</div>
+          <div class="stacked-ping">🔔 Sign-in request (11:42 AM) — Unanswered</div>
+          <div class="phone-title">Are you trying to sign in? (4th request)</div>
+          <div class="phone-detail">
+            <strong>Account:</strong> user@vols.utk.edu<br>
+            <strong>Note:</strong> Repeated sign-in requests for the same session.
+          </div>
+          <div class="mock-btns">
+            <span class="mock-deny">✕ Deny</span>
+            <span class="mock-approve">✓ Approve</span>
+          </div>
+        </div>`,
+      '3': `
+        <div class="phone-card">
+          <div class="phone-header">Verification Check</div>
+          <div class="phone-title">Confirm sign-in number</div>
+          <div class="code-badge">47</div>
+          <div class="phone-detail">
+            <strong>Account:</strong> user@vols.utk.edu<br>
+            <strong>Prompt:</strong> Tap Approve only if you see number 47 on your login screen.
+          </div>
+          <div class="mock-btns">
+            <span class="mock-deny">✕ Deny</span>
+            <span class="mock-approve">✓ Approve</span>
+          </div>
+        </div>`,
+      '4': `
+        <div class="phone-card">
+          <div class="phone-header">Security Alert • Just Now</div>
+          <div class="phone-title">Sign-in attempt detected</div>
+          <div class="phone-detail">
+            <strong>Device:</strong> Chrome on Windows 11<br>
+            <strong>Location:</strong> Moscow, Russia<br>
+            <strong>IP Address:</strong> 185.220.101.4
+          </div>
+          <div class="mock-btns">
+            <span class="mock-deny">✕ Deny</span>
+            <span class="mock-approve">✓ Approve</span>
+          </div>
+        </div>`
+    };
+
+    const TITLES = { '1': 'Section A', '2': 'Section B', '3': 'Section C', '4': 'Section D' };
+    let studyData = {};
+    let step2StartTime = 0;
+
+    function toStep2() {
+      const c = document.querySelector('input[name="cond"]:checked');
+      if (!c) return alert('Please pick a number.');
+      studyData.condition = c.value;
+      document.getElementById('secTitle').innerText = TITLES[c.value];
+      document.getElementById('promptVisual').innerHTML = PROMPT_CARDS[c.value];
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+
+      step2StartTime = performance.now();
+    }
+
+    function toStep3() {
+      const d = document.querySelector('input[name="decision"]:checked');
+      const a = document.querySelector('input[name="annoyed"]:checked');
+      const f = document.querySelector('input[name="conf"]:checked');
+      if (!d || !a || !f) return alert('Please answer all questions.');
+
+      const elapsedSec = ((performance.now() - step2StartTime) / 1000).toFixed(2);
+
+      studyData.decision = d.value;
+      studyData.decisionTimeSec = elapsedSec;
+      studyData.annoyed = a.value;
+      studyData.confidence = f.value;
+
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step3').classList.remove('hidden');
+
+      google.script.run
+        .withSuccessHandler(warning => {
+          studyData.warning = warning;
+          document.getElementById('warningText').innerText = warning;
+          document.getElementById('finalQuestionArea').classList.remove('hidden');
+        })
+        .withFailureHandler(err => {
+          alert('Error: ' + err.message);
+        })
+        .generateWarning(studyData);
+    }
+
+    function submitStudy() {
+      const finalD = document.querySelector('input[name="finalDecision"]:checked');
+      if (!finalD) return alert('Please select an option before submitting.');
+
+      studyData.finalDecision = finalD.value;
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+
+      google.script.run
+        .withSuccessHandler(() => {
+          document.getElementById('step3').classList.add('hidden');
+          document.getElementById('step4').classList.remove('hidden');
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false;
+          btn.innerText = 'Submit';
+          alert('Error: ' + err.message);
+        })
+        .saveFinalResponse(studyData);
+    }
+  </script>
+</body>
+</html>
