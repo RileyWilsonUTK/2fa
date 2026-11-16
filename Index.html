@@ -87,6 +87,9 @@
   </div>
 
   <script>
+    const RID = '<%= rid ? rid : "" %>';
+    const RETURN_URL = '<%= returnUrl ? returnUrl : "" %>';
+
     const PROMPT_CARDS = {
       '1': `
         <div class="phone-card">
@@ -200,17 +203,31 @@
       btn.disabled = true;
       btn.innerText = 'Saving...';
 
-      google.script.run
-        .withSuccessHandler(() => {
-          document.getElementById('step2').classList.add('hidden');
-          document.getElementById('step3').classList.remove('hidden');
-        })
-        .withFailureHandler(err => {
-          btn.disabled = false;
-          btn.innerText = 'Submit';
-          alert('Error: ' + err.message);
-        })
-        .saveFinalResponse(studyData);
+      if (RETURN_URL) {
+        studyData.finalDecision = finalD.value;
+        google.script.run
+          .withSuccessHandler(() => {
+            window.location.href = RETURN_URL;
+          })
+          .withFailureHandler(err => {
+            btn.disabled = false;
+            btn.innerText = 'Submit';
+            alert('Error: ' + err.message);
+          })
+          .saveFinalResponse(studyData);
+      } else {
+        google.script.run
+          .withSuccessHandler(() => {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+          })
+          .withFailureHandler(err => {
+            btn.disabled = false;
+            btn.innerText = 'Submit';
+            alert('Error: ' + err.message);
+          })
+          .saveFinalResponse(studyData);
+      }
     }
   </script>
 </body>
